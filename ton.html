@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="kk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TON 618 - Ultramassive Black Hole 360°</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Three.js & OrbitControls -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background-color: #020205;
+            color: #e2e8f0;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        .font-orbitron {
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        /* Glassmorphism UI panel */
+        .glass-panel {
+            background: rgba(10, 10, 18, 0.75);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 170, 0, 0.18);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8), inset 0 0 15px rgba(255, 150, 0, 0.05);
+        }
+
+        /* Neon Glow Text */
+        .neon-orange-text {
+            text-shadow: 0 0 10px rgba(255, 140, 0, 0.6), 0 0 22px rgba(255, 80, 0, 0.4);
+        }
+
+        .neon-blue-text {
+            text-shadow: 0 0 10px rgba(0, 200, 255, 0.6), 0 0 22px rgba(0, 120, 255, 0.4);
+        }
+
+        /* Neon Action Buttons */
+        .neon-btn {
+            background: linear-gradient(135deg, rgba(255, 140, 0, 0.2), rgba(255, 50, 0, 0.4));
+            border: 1px solid rgba(255, 165, 0, 0.5);
+            box-shadow: 0 0 15px rgba(255, 120, 0, 0.3);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .neon-btn:hover {
+            background: linear-gradient(135deg, rgba(255, 160, 0, 0.4), rgba(255, 80, 0, 0.6));
+            box-shadow: 0 0 25px rgba(255, 140, 0, 0.7);
+            transform: translateY(-2px);
+        }
+
+        /* Code display pre area */
+        pre code {
+            font-family: 'Courier New', Courier, monospace;
+            tab-size: 4;
+        }
+
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(5, 5, 10, 0.6);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 140, 0, 0.5);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 180, 0, 0.8);
+        }
+    </style>
+</head>
+<body class="h-screen w-screen relative overflow-hidden flex flex-col justify-between">
+
+    <!-- 3D WebGL Canvas Container -->
+    <div id="canvas-container" class="absolute inset-0 z-0 cursor-grab active:cursor-grabbing"></div>
+
+    <!-- Vignette & Space Gradients -->
+    <div class="absolute inset-0 pointer-events-none z-10 bg-[radial-gradient(circle_at_center,transparent_20%,rgba(2,2,6,0.95)_100%)]"></div>
+
+    <!-- Top Header Navigation Bar -->
+    <header class="relative z-20 w-full p-4 md:p-6 flex justify-between items-center max-w-7xl mx-auto">
+        <!-- Logo & Title -->
+        <div class="flex items-center space-x-3">
+            <div class="w-11 h-11 rounded-full border border-orange-500/40 flex items-center justify-center bg-black/60 shadow-[0_0_20px_rgba(255,140,0,0.3)]">
+                <i class="fa-solid fa-circle text-orange-500 text-lg animate-pulse"></i>
+            </div>
+            <div>
+                <h1 class="font-orbitron text-2xl md:text-3xl font-extrabold tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-amber-200 via-orange-400 to-red-500 neon-orange-text">
+                    TON 618
+                </h1>
+                <p class="text-[11px] tracking-widest uppercase text-amber-300/70 font-semibold">
+                    Ultramassive Black Hole • 360° Visualizer
+                </p>
+            </div>
+        </div>
+
+        <!-- Action Buttons Bar -->
+        <div class="flex items-center gap-3">
+            <!-- Copy Code Button (Кодты Көшіру) -->
+            <button id="open-code-modal-btn" class="neon-btn px-4 py-2 rounded-xl text-xs font-bold text-amber-100 flex items-center gap-2 cursor-pointer">
+                <i class="fa-solid fa-code text-orange-300"></i>
+                <span class="hidden sm:inline">Кодты көшіру / Code</span>
+                <span class="sm:hidden">Код</span>
+            </button>
+
+            <!-- Quick Toggle Controls Panel -->
+            <div class="glass-panel rounded-xl px-3 py-1.5 flex items-center gap-2">
+                <button id="toggle-rotation-btn" title="Айналуды тоқтату / Toggle Rotation" class="text-gray-300 hover:text-orange-400 transition-colors p-2">
+                    <i class="fa-solid fa-sync text-sm" id="rotation-icon"></i>
+                </button>
+                <div class="h-4 w-[1px] bg-white/10"></div>
+                <button id="toggle-jets-btn" title="Релятивистік ағынды қосу / Relativistic Jets" class="text-gray-300 hover:text-orange-400 transition-colors p-2">
+                    <i class="fa-solid fa-meteor text-sm" id="jets-icon"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Center Overlay (Information & Controls Overlay) -->
+    <main class="relative z-20 flex-1 flex flex-col md:flex-row justify-between items-end md:items-center px-4 md:px-8 pb-6 pointer-events-none gap-4">
+        
+        <!-- Left Side: TON 618 Cosmic Facts Card -->
+        <div class="glass-panel p-5 rounded-2xl max-w-sm w-full pointer-events-auto border-orange-500/20 transform transition-all duration-300 hover:border-orange-500/40">
+            <div class="flex items-center justify-between mb-3 border-b border-white/10 pb-2">
+                <h2 class="font-orbitron text-sm font-bold text-amber-400 uppercase tracking-wider flex items-center gap-2">
+                    <i class="fa-solid fa-atom text-orange-400"></i> TON 618 Ақпараты
+                </h2>
+                <span class="text-[10px] bg-orange-500/20 text-orange-300 px-2 py-0.5 rounded-full border border-orange-500/30">Қара құрдым</span>
+            </div>
+
+            <ul class="space-y-2.5 text-xs text-gray-300">
+                <li class="flex justify-between items-center border-b border-white/5 pb-1">
+                    <span class="text-gray-400">Массасы (Mass):</span>
+                    <span class="font-semibold text-amber-200">66,000,000,000 M☉</span>
+                </li>
+                <li class="flex justify-between items-center border-b border-white/5 pb-1">
+                    <span class="text-gray-400">Қашықтығы (Distance):</span>
+                    <span class="font-semibold text-amber-200">18.2 млрд жарық жылы</span>
+                </li>
+                <li class="flex justify-between items-center border-b border-white/5 pb-1">
+                    <span class="text-gray-400">Шварцшильд радиусы:</span>
+                    <span class="font-semibold text-amber-200">~390 млрд км (1,300 AU)</span>
+                </li>
+                <li class="flex justify-between items-center">
+                    <span class="text-gray-400">Квазар жарқырауы:</span>
+                    <span class="font-semibold text-amber-200">140 триллион Күн</span>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Right Side: Customization & Interactive Slider Controls -->
+        <div class="glass-panel p-5 rounded-2xl max-w-xs w-full pointer-events-auto border-orange-500/20">
+            <h3 class="font-orbitron text-xs font-bold text-amber-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                <i class="fa-solid fa-sliders text-orange-400"></i> Басқару Панелі
+            </h3>
+
+            <!-- Rotation Speed Slider -->
+            <div class="mb-4">
+                <div class="flex justify-between text-xs mb-1">
+                    <span class="text-gray-300">Айналу жылдамдығы:</span>
+                    <span id="speed-val" class="text-amber-400 font-mono">1.0x</span>
+                </div>
+                <input type="range" id="speed-slider" min="0" max="0.03" step="0.001" value="0.008" class="w-full accent-orange-500 bg-black/50 rounded-lg h-1.5 cursor-pointer">
+            </div>
+
+            <!-- Accretion Disk Color Presets -->
+            <div>
+                <label class="block text-xs text-gray-300 mb-1.5">Диск түсі (Color Mode):</label>
+                <div class="grid grid-cols-4 gap-2">
+                    <button class="color-preset-btn p-2 rounded-lg border border-orange-500/50 bg-gradient-to-r from-amber-500 to-red-600 h-7" data-theme="fire" title="От түсті (Fiery Fire)"></button>
+                    <button class="color-preset-btn p-2 rounded-lg border border-white/10 bg-gradient-to-r from-cyan-400 to-blue-600 h-7 hover:border-cyan-400" data-theme="cyan" title="Космостық Көк (Cosmic Blue)"></button>
+                    <button class="color-preset-btn p-2 rounded-lg border border-white/10 bg-gradient-to-r from-purple-500 to-pink-600 h-7 hover:border-purple-400" data-theme="violet" title="Күлгін (Violet Void)"></button>
+                    <button class="color-preset-btn p-2 rounded-lg border border-white/10 bg-gradient-to-r from-emerald-400 to-teal-600 h-7 hover:border-emerald-400" data-theme="emerald" title="Изумруд (Emerald Star)"></button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Bottom Navigation Hints Bar -->
+    <footer class="relative z-20 w-full p-4 max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-2 text-xs text-gray-400">
+        <div class="flex items-center gap-2 bg-black/50 px-3 py-1.5 rounded-full border border-white/10">
+            <i class="fa-solid fa-arrows-spin text-orange-400"></i>
+            <span>360° қарау үшін тышқанмен жетектеңіз | Scroll арқылы жақындатыңыз</span>
+        </div>
+        <div class="text-[11px] text-gray-500">
+            Three.js & WebGL Powered Simulation
+        </div>
+    </footer>
+
+    <!-- CODE VIEW & COPY MODAL (Кодты көрсету және көшіру терезесі) -->
+    <div id="code-modal" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 hidden">
+        <div class="glass-panel rounded-2xl w-full max-w-4xl h-[85vh] flex flex-col border border-orange-500/40 shadow-2xl overflow-hidden">
+            
+            <!-- Modal Header -->
+            <div class="p-4 border-b border-white/10 flex justify-between items-center bg-black/40">
+                <div class="flex items-center gap-3">
+                    <i class="fa-solid fa-code text-orange-400 text-lg"></i>
+                    <div>
+                        <h3 class="font-orbitron font-bold text-base text-amber-300">TON 618 Бастапқы Коды (Source Code)</h3>
+                        <p class="text-xs text-gray-400">Төмендегі батырманы басып, толық HTML/JS кодын көшіріп алыңыз</p>
+                    </div>
+                </div>
+                
+                <button id="close-modal-btn" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-gray-300 hover:text-white transition-colors">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Modal Code Body -->
+            <div class="flex-1 p-4 overflow-y-auto bg-black/80 font-mono text-xs text-green-400 border-b border-white/10">
+                <pre id="source-code-display" class="whitespace-pre-wrap break-all selection:bg-orange-500 selection:text-black"><code><!-- Source Code inserted here via JS --></code></pre>
+            </div>
+
+            <!-- Modal Footer Actions -->
+            <div class="p-4 bg-black/60 flex justify-between items-center">
+                <span id="copy-status" class="text-xs font-semibold text-emerald-400 hidden flex items-center gap-2">
+                    <i class="fa-solid fa-check-circle"></i> Код сәтті көшірілді! (Copied to Clipboard)
+                </span>
+                <div class="ml-auto flex gap-3">
+                    <button id="modal-cancel-btn" class="px-4 py-2 rounded-xl bg-white/5 text-xs text-gray-300 hover:bg-white/10">
+                        Жабу (Close)
+                    </button>
+                    <button id="copy-code-btn" class="neon-btn px-6 py-2 rounded-xl text-xs font-bold text-amber-100 flex items-center gap-2">
+                        <i class="fa-solid fa-copy"></i>
+                        <span>Кодты Көшіру (Copy Code)</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. THREE.JS 3D SCENE SETUP ---
+        const container = document.getElementById('canvas-container');
+        
+        // Scene, Camera, Renderer
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x020205, 0.015);
+
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 2000);
+        camera.position.set(0, 15, 38);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.25;
+        container.appendChild(renderer.domElement);
+
+        // OrbitControls for smooth 360-degree rotation and zoom
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.maxDistance = 120;
+        controls.minDistance = 10;
+        controls.autoRotate = true;
+        controls.autoRotateSpeed = 1.5;
+
+        // --- 2. TON 618 BLACK HOLE COMPONENTS ---
+        const blackHoleGroup = new THREE.Group();
+        scene.add(blackHoleGroup);
+
+        // A. EVENT HORIZON (Absolute pitch-black center sphere)
+        const eventHorizonGeo = new THREE.SphereGeometry(6, 64, 64);
+        const eventHorizonMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
+        const eventHorizon = new THREE.Mesh(eventHorizonGeo, eventHorizonMat);
+        blackHoleGroup.add(eventHorizon);
+
+        // B. PHOTON SPHERE RING (Gravitational lensing glow aura)
+        const photonSphereGeo = new THREE.SphereGeometry(6.3, 64, 64);
+        const photonSphereMat = new THREE.MeshBasicMaterial({
+            color: 0xffaa00,
+            transparent: true,
+            opacity: 0.35,
+            side: THREE.BackSide
+        });
+        const photonSphere = new THREE.Mesh(photonSphereGeo, photonSphereMat);
+        blackHoleGroup.add(photonSphere);
+
+        // C. SWIRLING ACCRETION DISK (Particle System)
+        const particleCount = 45000;
+        const accretionGeo = new THREE.BufferGeometry();
+        const positions = new Float32Array(particleCount * 3);
+        const colors = new Float32Array(particleCount * 3);
+        const sizes = new Float32Array(particleCount);
+
+        const colorInside = new THREE.Color(0xffffff);  // White hot center
+        const colorMiddle = new THREE.Color(0xff7700);  // Fiery orange
+        const colorOutside = new THREE.Color(0xaa0000); // Deep red outer edge
+
+        for (let i = 0; i < particleCount; i++) {
+            // Radial spiral distribution
+            const radius = 7.2 + Math.pow(Math.random(), 1.8) * 22;
+            const angle = Math.random() * Math.PI * 2;
+            
+            // Subtle disk thickness (thin profile)
+            const height = (Math.random() - 0.5) * (1.8 * (1 - (radius - 7.2) / 22));
+
+            positions[i * 3] = Math.cos(angle) * radius;
+            positions[i * 3 + 1] = height;
+            positions[i * 3 + 2] = Math.sin(angle) * radius;
+
+            // Color gradient based on distance from Event Horizon
+            const normalizedDist = (radius - 7.2) / 22;
+            let pColor = new THREE.Color();
+            
+            if (normalizedDist < 0.2) {
+                pColor.lerpColors(colorInside, colorMiddle, normalizedDist / 0.2);
+            } else {
+                pColor.lerpColors(colorMiddle, colorOutside, (normalizedDist - 0.2) / 0.8);
+            }
+
+            colors[i * 3] = pColor.r;
+            colors[i * 3 + 1] = pColor.g;
+            colors[i * 3 + 2] = pColor.b;
+
+            sizes[i] = Math.random() * 0.25 + 0.08;
+        }
+
+        accretionGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        accretionGeo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+        accretionGeo.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+
+        // Particle material with additive blending for glowing plasma effect
+        const accretionMat = new THREE.PointsMaterial({
+            size: 0.22,
+            vertexColors: true,
+            transparent: true,
+            opacity: 0.85,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false
+        });
+
+        const accretionDisk = new THREE.Points(accretionGeo, accretionMat);
+        blackHoleGroup.add(accretionDisk);
+
+        // D. GRAVITATIONAL LENSING HALO (Bent Light Ring)
+        const ringGeo = new THREE.RingGeometry(6.4, 13, 64);
+        const ringMat = new THREE.MeshBasicMaterial({
+            color: 0xffaa00,
+            side: THREE.DoubleSide,
+            transparent: true,
+            opacity: 0.5,
+            blending: THREE.AdditiveBlending
+        });
+        const lensingRing = new THREE.Mesh(ringGeo, ringMat);
+        lensingRing.rotation.x = Math.PI / 2;
+        blackHoleGroup.add(lensingRing);
+
+        // E. RELATIVISTIC JETS (Poles Cosmic Plasma Streaming)
+        const jetsGroup = new THREE.Group();
+        const jetGeo = new THREE.CylinderGeometry(0.2, 4.5, 50, 32, 1, true);
+        const jetMat = new THREE.MeshBasicMaterial({
+            color: 0x00d2ff,
+            transparent: true,
+            opacity: 0.35,
+            blending: THREE.AdditiveBlending,
+            side: THREE.DoubleSide
+        });
+
+        const topJet = new THREE.Mesh(jetGeo, jetMat);
+        topJet.position.y = 28;
+        jetsGroup.add(topJet);
+
+        const bottomJet = new THREE.Mesh(jetGeo, jetMat);
+        bottomJet.position.y = -28;
+        bottomJet.rotation.x = Math.PI;
+        jetsGroup.add(bottomJet);
+
+        blackHoleGroup.add(jetsGroup);
+
+        // F. BACKGROUND COSMIC STARFIELD
+        const starCount = 3000;
+        const starGeo = new THREE.BufferGeometry();
+        const starPositions = new Float32Array(starCount * 3);
+
+        for (let i = 0; i < starCount * 3; i++) {
+            starPositions[i] = (Math.random() - 0.5) * 800;
+        }
+        starGeo.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
+        const starMat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.7, transparent: true, opacity: 0.75 });
+        const starField = new THREE.Points(starGeo, starMat);
+        scene.add(starField);
+
+        // --- 3. INTERACTIVE CONTROLS & UI EVENT LISTENERS ---
+        const speedSlider = document.getElementById('speed-slider');
+        const speedVal = document.getElementById('speed-val');
+        const toggleRotationBtn = document.getElementById('toggle-rotation-btn');
+        const rotationIcon = document.getElementById('rotation-icon');
+        const toggleJetsBtn = document.getElementById('toggle-jets-btn');
+        const jetsIcon = document.getElementById('jets-icon');
+        const colorBtns = document.querySelectorAll('.color-preset-btn');
+
+        // Rotation Speed Slider logic
+        speedSlider.addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value);
+            controls.autoRotateSpeed = val * 150;
+            speedVal.innerText = (val * 125).toFixed(1) + 'x';
+        });
+
+        // Toggle Rotation ON/OFF
+        toggleRotationBtn.addEventListener('click', () => {
+            controls.autoRotate = !controls.autoRotate;
+            rotationIcon.className = controls.autoRotate ? "fa-solid fa-sync text-sm text-orange-400" : "fa-solid fa-pause text-sm text-gray-400";
+        });
+
+        // Toggle Relativistic Jets
+        toggleJetsBtn.addEventListener('click', () => {
+            jetsGroup.visible = !jetsGroup.visible;
+            jetsIcon.className = jetsGroup.visible ? "fa-solid fa-meteor text-sm text-cyan-400" : "fa-solid fa-meteor text-sm text-gray-500";
+        });
+
+        // Theme Color Switching logic
+        const themes = {
+            fire: { disk: 0xff7700, ring: 0xffaa00, jet: 0x00d2ff },
+            cyan: { disk: 0x00d2ff, ring: 0x0077ff, jet: 0xff00aa },
+            violet: { disk: 0xa855f7, ring: 0xec4899, jet: 0x3b82f6 },
+            emerald: { disk: 0x10b981, ring: 0x06b6d4, jet: 0xf59e0b }
+        };
+
+        colorBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const themeKey = btn.getAttribute('data-theme');
+                const t = themes[themeKey];
+                
+                // Update Accretion Disk Colors dynamically
+                const colorsAttr = accretionGeo.attributes.color;
+                const cInside = new THREE.Color(0xffffff);
+                const cMid = new THREE.Color(t.disk);
+                const cOut = new THREE.Color(t.ring);
+
+                for (let i = 0; i < particleCount; i++) {
+                    const radius = Math.sqrt(positions[i * 3] ** 2 + positions[i * 3 + 2] ** 2);
+                    const norm = (radius - 7.2) / 22;
+                    let pC = new THREE.Color();
+                    if (norm < 0.2) pC.lerpColors(cInside, cMid, norm / 0.2);
+                    else pC.lerpColors(cMid, cOut, (norm - 0.2) / 0.8);
+
+                    colorsAttr.setXYZ(i, pC.r, pC.g, pC.b);
+                }
+                colorsAttr.needsUpdate = true;
+                ringMat.color.setHex(t.ring);
+                jetMat.color.setHex(t.jet);
+            });
+        });
+
+        // --- 4. CODE DISPLAY & COPY TOOL LOGIC ---
+        const codeModal = document.getElementById('code-modal');
+        const openCodeModalBtn = document.getElementById('open-code-modal-btn');
+        const closeModalBtn = document.getElementById('close-modal-btn');
+        const modalCancelBtn = document.getElementById('modal-cancel-btn');
+        const copyCodeBtn = document.getElementById('copy-code-btn');
+        const sourceCodeDisplay = document.getElementById('source-code-display');
+        const copyStatus = document.getElementById('copy-status');
+
+        // Open Source Code Modal
+        openCodeModalBtn.addEventListener('click', () => {
+            // Get full HTML document string
+            const htmlCode = document.documentElement.outerHTML;
+            sourceCodeDisplay.textContent = htmlCode;
+            codeModal.classList.remove('hidden');
+        });
+
+        // Close Modal
+        const closeModal = () => codeModal.classList.add('hidden');
+        closeModalBtn.addEventListener('click', closeModal);
+        modalCancelBtn.addEventListener('click', closeModal);
+
+        // One-Click Copy Code to Clipboard
+        copyCodeBtn.addEventListener('click', () => {
+            const textToCopy = document.documentElement.outerHTML;
+            
+            // Fallback for document.execCommand / navigator.clipboard
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(textToCopy).then(showCopySuccess);
+            } else {
+                const textarea = document.createElement('textarea');
+                textarea.value = textToCopy;
+                textarea.style.position = 'fixed';
+                textarea.style.left = '-9999px';
+                document.body.appendChild(textarea);
+                textarea.select();
+                try {
+                    document.execCommand('copy');
+                    showCopySuccess();
+                } catch (err) {
+                    console.error('Copy failed', err);
+                }
+                document.body.removeChild(textarea);
+            }
+        });
+
+        function showCopySuccess() {
+            copyStatus.classList.remove('hidden');
+            copyCodeBtn.classList.add('bg-emerald-600');
+            setTimeout(() => {
+                copyStatus.classList.add('hidden');
+                copyCodeBtn.classList.remove('bg-emerald-600');
+            }, 3000);
+        }
+
+        // --- 5. ANIMATION LOOP & RESPONSIVENESS ---
+        const clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const elapsedTime = clock.getElapsedTime();
+
+            // Rotate Accretion disk particles internally
+            accretionDisk.rotation.y = elapsedTime * 0.12;
+
+            // Slight pulsation on Lensing aura
+            photonSphere.scale.setScalar(1 + Math.sin(elapsedTime * 2) * 0.015);
+
+            // Update Orbit Controls
+            controls.update();
+
+            // Render scene
+            renderer.render(scene, camera);
+        }
+
+        // Resize Listener
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Start 3D Engine on Window Load
+        window.onload = function() {
+            animate();
+        };
+    </script>
+</body>
+</html>
